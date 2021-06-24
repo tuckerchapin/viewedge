@@ -1,13 +1,12 @@
 const c = document.getElementById('c'),
-    ctx = c.getContext('2d');
+  ctx = c.getContext('2d');
 
 const {
   shapesCount = 2,
   pointCount = 5,
-  colorSpeed = 10,
-  movementSpeed = 2,
-  afterimages = 10,
-  afterimageSpacing = 20,
+  colorSpeed = 1000,
+  movementSpeed = 5,
+  afterimages = 100,
 } = Object.fromEntries([...new URLSearchParams(location.search)].map(arr => [arr[0], parseInt(arr[1])]));
 
 console.log(Object.fromEntries([...new URLSearchParams(location.search)].map(arr => [arr[0], parseInt(arr[1])])));
@@ -35,62 +34,65 @@ function drawIntermediates(steps, colorA, colorB) {
 };
 
 function Point() {
-    this.x = parseInt(Math.random() * c.width);
-    this.y = parseInt(Math.random() * c.height);
-    this.xVel = parseInt(Math.random() * 2) == 1 ? 1 : -1;
-    this.yVel = parseInt(Math.random() * 2) == 1 ? 1 : -1;
+  this.x = parseInt(Math.random() * c.width);
+  this.y = parseInt(Math.random() * c.height);
+  this.xVel = parseInt(Math.random() * 2) == 1 ? 1 : -1;
+  this.yVel = parseInt(Math.random() * 2) == 1 ? 1 : -1;
 }
 
 function Shape() {
     this.colorSteps = drawIntermediates(colorSpeed, randomColor(), randomColor());
     this.colorStep = 0;
-    this.points = [];
-    this.history = Array(afterimages).fill(0).map(
 
-    );
-
-    for(let i = 0; i < pointCount; i++) {
-        this.points.push(new Point());
-    }
-    this.history.push(this.points);
+    const startingPoints = Array(pointCount).fill(0).map(() => new Point());
+    this.points = [
+      ...Array(afterimages).fill(0).map((a, i) =>  startingPoints.map(startingPoint => ({
+        x: startingPoint.x + startingPoint.xVel * movementSpeed * i,
+        y: startingPoint.y + startingPoint.yVel * movementSpeed * i,
+      }))),
+      startingPoints
+    ];
 
     this.draw = () => {
-        ctx.strokeStyle = '#' + this.colorSteps[this.colorStep].map((color) => color.toString(16).padStart(2, '0')).join('');
+      this.points.forEach((point, i) => {
+        ctx.strokeStyle = `rgba(${this.colorSteps[this.colorStep].join(',')},${1 / ((afterimages - 1 - i) )})`;
+        // ctx.strokeStyle = `rgb(${this.colorSteps[this.colorStep].join(',')})`;
         ctx.beginPath();
-        ctx.moveTo(this.points[0].x, this.points[0].y);
+        ctx.moveTo(point[0].x, point[0].y);
 
-        for(let i = 1; i < this.points.length; i++) {
-            const p = this.points[i];
+        point.slice(1).forEach((p) => ctx.lineTo(p.x, p.y));
 
-            ctx.lineTo(p.x, p.y);
-        }
-
-        ctx.lineTo(this.points[0].x, this.points[0].y);
+        ctx.lineTo(point[0].x, point[0].y);
         ctx.closePath();
         ctx.stroke();
+      });
     }
 
     this.update = () => {
-        this.colorStep += 1;
-        if (this.colorStep === colorSpeed) {
-          this.colorSteps = drawIntermediates(colorSpeed, this.colorSteps.pop(), randomColor());
-          this.colorStep = 0;
-        }
+      this.colorStep += 1;
+      if (this.colorStep === colorSpeed) {
+        this.colorSteps = drawIntermediates(colorSpeed, this.colorSteps.pop(), randomColor());
+        this.colorStep = 0;
+      }
 
-        for(let i = 0; i < this.points.length; i++) {
-            const p = this.points[i];
+      this.points.shift();
+      const last = this.points.slice(-1)[0];
+      this.points.push(last.map(lastPoint => {
+        const newPoint = {
+          x: lastPoint.x + lastPoint.xVel * movementSpeed,
+          y: lastPoint.y + lastPoint.yVel * movementSpeed,
+          xVel: lastPoint.xVel,
+          yVel: lastPoint.yVel,
+        };
 
-            p.x += p.xVel * movementSpeed;
-            p.y += p.yVel * movementSpeed;
+        if(newPoint.x > c.width) newPoint.xVel = Math.abs(newPoint.xVel) * -1;
+        if(newPoint.x < 0) newPoint.xVel = Math.abs(newPoint.xVel);
 
-            if(p.x > c.width) p.xVel = Math.abs(p.xVel) * -1;
-            if(p.x < 0) p.xVel = Math.abs(p.xVel);
+        if(newPoint.y > c.height) newPoint.yVel = Math.abs(newPoint.yVel) * -1;
+        if(newPoint.y < 0) newPoint.yVel = Math.abs(newPoint.yVel);
 
-            if(p.y > c.height) p.yVel = Math.abs(p.yVel) * -1;
-            if(p.y < 0) p.yVel = Math.abs(p.yVel);
-
-
-        }
+        return newPoint;
+      }));
     }
 }
 
