@@ -3,10 +3,10 @@ const c = document.getElementById('c'),
 
 const {
   shapesCount = 2,
-  pointCount = 5,
-  colorSpeed = 1000,
+  pointCount = 4,
+  colorSpeed = 500,
   movementSpeed = 5,
-  afterimages = 20,
+  afterimages = 50,
 } = Object.fromEntries([...new URLSearchParams(location.search)].map(arr => [arr[0], parseInt(arr[1])]));
 
 console.log(Object.fromEntries([...new URLSearchParams(location.search)].map(arr => [arr[0], parseInt(arr[1])])));
@@ -55,7 +55,8 @@ function Shape() {
 
     this.draw = () => {
       this.points.forEach((point, i) => {
-        ctx.strokeStyle = `rgba(${this.colorSteps[this.colorStep].join(',')},${1 / (afterimages - 1 - i)})`;
+        // ctx.strokeStyle = `rgba(${this.colorSteps[this.colorStep].join(',')},${1 / (afterimages - i)})`;
+        ctx.strokeStyle = `rgba(${this.colorSteps[this.colorStep].join(',')},${1 - ((afterimages - i) * .1)})`;
         ctx.beginPath();
         ctx.moveTo(point[0].x, point[0].y);
 
